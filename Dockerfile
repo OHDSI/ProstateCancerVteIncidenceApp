@@ -20,19 +20,39 @@ ARG GIT_COMMIT_ID_ABBREV=unknown
 # Try to only install system libraries you actually need
 # Package Manager is a good resource to help discover system deps
 RUN apt-get update && \
-    apt-get install -y python3-pip && \
+    apt-get install -y \
+        python3-pip \
+        libuv1-dev \
+        libv8-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# install required R packages - fail the build if there are any missing dependencies
+# Use Ubuntu's shared libnode instead of downloading static V8.
+# The V8 package's default /usr/include/v8 header path is correct.
+ENV V8_PKG_CFLAGS="-I/usr/include/nodejs/deps/v8/include"
+ENV V8_PKG_LIBS="-lnode"
+
 RUN R -e ' \
-  install.packages(c("remotes", "rJava", "dplyr", "DatabaseConnector", "ggplot2", "plotly", "shinyWidgets", "shiny"), repos="http://cran.rstudio.com/"); \
-  pkgs <- c("remotes", "rJava", "dplyr", "DatabaseConnector", "ggplot2", "plotly", "shinyWidgets", "shiny"); \
-  sapply(pkgs, function(pkg) { \
-    if (!require(pkg, character.only = TRUE, quietly = TRUE)) { \
-      stop(paste("Package", pkg, "failed to load")) \
-    } \
-  })'
+  install.packages("remotes", repos = "https://cloud.r-project.org/"); \
+  remotes::install_version( \
+    "V8", \
+    version = "4.4.2", \
+    repos = "https://cloud.r-project.org/", \
+    upgrade = "never" \
+  ); \
+  packages <- c( \
+    "rJava", "dplyr", "DatabaseConnector", \
+    "ggplot2", "plotly", "shinyWidgets", "shiny", \
+    "forestploter", "gt", "gtExtras" \
+  ); \
+  install.packages(packages, repos = "https://cloud.r-project.org/"); \
+  required <- c("remotes", "V8", packages); \
+  missing <- required[!vapply( \
+    required, requireNamespace, logical(1), quietly = TRUE \
+  )]; \
+  if (length(missing)) { \
+    stop(paste("Packages failed to load:", paste(missing, collapse = ", "))) \
+  }'
 
 RUN R CMD javareconf
 
@@ -51,7 +71,7 @@ RUN --mount=type=secret,id=build_github_pat \
     R -e "remotes::install_github('OHDSI/OhdsiShinyModules'); if (!require('OhdsiShinyModules', quietly = TRUE)) stop('Installation of OhdsiShinyModules failed')" && \
     cp /tmp/Renviron /usr/local/lib/R/etc/Renviron
 
-ENV DATABASECONNECTOR_JAR_FOLDER /root
+ENV DATABASECONNECTOR_JAR_FOLDER=/root
 RUN R -e "DatabaseConnector::downloadJdbcDrivers('postgresql', pathToDriver='/root')"
 
 # run app
