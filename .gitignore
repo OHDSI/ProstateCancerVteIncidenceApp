@@ -1,0 +1,4 @@
+.vscode/
+.env
+.Rproj.user
+ZscalerRootCA.crt
