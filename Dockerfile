@@ -67,8 +67,8 @@ RUN --mount=type=secret,id=build_github_pat \
     cp /usr/local/lib/R/etc/Renviron /tmp/Renviron && \
     echo "GITHUB_PAT=$(cat /run/secrets/build_github_pat)" >> /usr/local/lib/R/etc/Renviron && \
     R -e "remotes::install_github('OHDSI/ResultModelManager'); if (!require('ResultModelManager', quietly = TRUE)) stop('Installation of ResultModelManager failed')" && \
-    R -e "remotes::install_github('OHDSI/ShinyAppBuilder'); if (!require('ShinyAppBuilder', quietly = TRUE)) stop('Installation of ShinyAppBuilder failed')" && \
-    R -e "remotes::install_github('OHDSI/OhdsiShinyModules'); if (!require('OhdsiShinyModules', quietly = TRUE)) stop('Installation of OhdsiShinyModules failed')" && \
+    R -e "remotes::install_github('OHDSI/OhdsiShinyModules@v3.1.2'); if (!require('OhdsiShinyModules', quietly = TRUE)) stop('Installation of OhdsiShinyModules failed')" && \
+    R -e "remotes::install_github('OHDSI/ShinyAppBuilder@v3.2.0'); if (!require('ShinyAppBuilder', quietly = TRUE)) stop('Installation of ShinyAppBuilder failed')" && \
     cp /tmp/Renviron /usr/local/lib/R/etc/Renviron
 
 ENV DATABASECONNECTOR_JAR_FOLDER=/root
